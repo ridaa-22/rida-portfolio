@@ -1,11 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Loader2, Mail, MapPin, Send } from 'lucide-react';
+import { Mail, MapPin, Send } from 'lucide-react';
 import { fadeUp, stagger } from '@/lib/motion';
-import { supabase } from '@/lib/supabase';
 import { CONTACT_EMAIL, CONTACT_LOCATION } from '@/data/portfolio';
-
-type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
 interface ContactForm {
   name: string;
@@ -20,33 +17,16 @@ const INPUT_CLASS =
 
 export default function Contact() {
   const [form, setForm] = useState<ContactForm>(EMPTY_FORM);
-  const [status, setStatus] = useState<SubmitStatus>('idle');
 
   function updateField(field: keyof ContactForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus('sending');
-
-    try {
-      const { error } = await supabase.from('contact_messages').insert({
-        name: form.name.trim(),
-        email: form.email.trim(),
-        message: form.message.trim(),
-      });
-
-      if (error) {
-        setStatus('error');
-        return;
-      }
-
-      setForm(EMPTY_FORM);
-      setStatus('success');
-    } catch {
-      setStatus('error');
-    }
+    const subject = `Portfolio inquiry from ${form.name.trim()}`;
+    const body = `Name: ${form.name.trim()}\nEmail: ${form.email.trim()}\n\n${form.message.trim()}`;
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
   return (
@@ -141,25 +121,12 @@ export default function Contact() {
           <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="submit"
-              disabled={status === 'sending'}
-              className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-primary"
             >
-              {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              {status === 'sending' ? 'Sending...' : 'Send Message'}
+              <Send size={16} />
+              Open Email App
             </button>
 
-            {status === 'success' && (
-              <p role="status" className="flex items-center gap-2 text-sm text-emerald-300">
-                <CheckCircle2 size={16} />
-                Message sent. I will get back to you soon.
-              </p>
-            )}
-            {status === 'error' && (
-              <p role="alert" className="flex items-center gap-2 text-sm text-rose-300">
-                <AlertCircle size={16} />
-                Something went wrong. Please try again.
-              </p>
-            )}
           </div>
         </motion.form>
       </div>
